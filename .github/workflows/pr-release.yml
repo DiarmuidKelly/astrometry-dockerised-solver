@@ -22,6 +22,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ssh-key: ${{ secrets.DEPLOY_KEY }}
 
       - name: Determine version bump from PR title
         id: version_bump
@@ -32,9 +33,9 @@ jobs:
           if [[ "$PR_TITLE" =~ ^\[MAJOR\] ]] || [[ "$PR_TITLE" =~ ^\[major\] ]]; then
             echo "bump=major" >> $GITHUB_OUTPUT
             echo "Version bump: MAJOR (new upstream version)"
-          elif [[ "$PR_TITLE" =~ ^\[MINOR\] ]] || [[ "$PR_TITLE" =~ ^\[minor\] ]]; then
+          elif [[ "$PR_TITLE" =~ ^\[MINOR\] ]] || [[ "$PR_TITLE" =~ ^\[minor\] ]] || [[ "$PR_TITLE" =~ ^feat ]]; then
             echo "bump=minor" >> $GITHUB_OUTPUT
-            echo "Version bump: MINOR (features)"
+            echo "Version bump: MINOR (new feature)"
           elif [[ "$PR_TITLE" =~ ^\[PATCH\] ]] || [[ "$PR_TITLE" =~ ^\[patch\] ]] || [[ "$PR_TITLE" =~ ^fix ]]; then
             echo "bump=patch" >> $GITHUB_OUTPUT
             echo "Version bump: PATCH (bug fix)"
