@@ -45,10 +45,9 @@ RUN apt -y update && apt install -y apt-utils && \
     python3-numpy \
     python3-scipy \
     python3-matplotlib \
+    python3-fitsio \
+    python3-astropy \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
-# Install Python dependencies
-RUN pip3 install --no-cache --break-system-packages fitsio astropy
 
 # Help astrometry.net find netpbm
 RUN ln -s /usr/include /usr/local/include/netpbm
@@ -99,15 +98,13 @@ RUN apt -y update && \
     libjpeg-turbo8 \
     libpng16-16 \
     python3 \
-    python3-pip \
     python3-pil \
     python3-numpy \
     python3-scipy \
     python3-matplotlib \
+    python3-fitsio \
+    python3-astropy \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
-# Install Python runtime dependencies
-RUN pip3 install --no-cache --break-system-packages fitsio astropy
 
 # python = python3
 RUN ln -s /usr/bin/python3 /usr/bin/python
