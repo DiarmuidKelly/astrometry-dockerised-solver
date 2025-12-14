@@ -1,5 +1,11 @@
 # Astrometry.net Dockerised Solver
 
+[![Docker Image Version (latest semver)](https://img.shields.io/docker/v/diarmuidk/astrometry-dockerised-solver?sort=semver&label=dockerhub)](https://hub.docker.com/r/diarmuidk/astrometry-dockerised-solver)
+[![ghcr.io](https://img.shields.io/badge/ghcr.io-latest-blue)](https://github.com/DiarmuidKelly/astrometry-dockerised-solver/pkgs/container/astrometry-dockerised-solver)
+[![Docker Image Size](https://img.shields.io/docker/image-size/diarmuidk/astrometry-dockerised-solver/latest)](https://hub.docker.com/r/diarmuidk/astrometry-dockerised-solver)
+[![Docker Pulls](https://img.shields.io/docker/pulls/diarmuidk/astrometry-dockerised-solver)](https://hub.docker.com/r/diarmuidk/astrometry-dockerised-solver)
+[![License](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](LICENSE)
+
 A minimal, maintained Docker image for the [Astrometry.net](https://github.com/dstndstn/astrometry.net) plate solver - solver binaries only, no web app.
 
 Built specifically for use with [astrometry-go-client](https://github.com/DiarmuidKelly/astrometry-go-client).
@@ -15,8 +21,11 @@ Built specifically for use with [astrometry-go-client](https://github.com/Diarmu
 ## Quick Start
 
 ```bash
-# Pull the latest image
+# Pull from GitHub Container Registry (GHCR)
 docker pull ghcr.io/diarmuidkelly/astrometry-dockerised-solver:latest
+
+# Or pull from DockerHub
+docker pull diarmuidk/astrometry-dockerised-solver:latest
 
 # Show help
 docker run --rm ghcr.io/diarmuidkelly/astrometry-dockerised-solver:latest solve-field --help
@@ -73,6 +82,8 @@ docker run --rm \
 
 ## Available Tags
 
+Available on both [DockerHub](https://hub.docker.com/r/diarmuidk/astrometry-dockerised-solver/tags) and [GHCR](https://github.com/DiarmuidKelly/astrometry-dockerised-solver/pkgs/container/astrometry-dockerised-solver):
+
 - `latest` - most recent build from `main` branch
 - `0.97`, `0.96`, etc. - specific astrometry.net versions
 - `main` - development builds
@@ -105,20 +116,33 @@ This repo uses GitHub Actions to:
    - Creates GitHub issues when new versions are available
    - Provides instructions for building the new version
 
-## Publishing a New Version
+## Versioning
 
-When a new astrometry.net release is published:
+This project follows a **semantic versioning scheme aligned with upstream**:
 
-1. An issue will be automatically created
-2. Review the upstream release notes
-3. Tag and push to trigger the build:
+**Format:** `MAJOR.MINOR.PATCH`
+- `MAJOR.MINOR` - Matches upstream astrometry.net version (e.g., `0.97`)
+- `PATCH` - Increments for Dockerfile fixes/improvements
 
-```bash
-git tag v0.98  # Use the upstream version
-git push origin v0.98
-```
+**Examples:**
+- `0.97.0` - Initial build of astrometry.net 0.97
+- `0.97.1` - Dockerfile optimization for 0.97
+- `0.98.0` - New upstream astrometry.net 0.98 release
 
-The GitHub Action will automatically build and push the new version to GHCR.
+### Release Process
+
+**For Dockerfile changes (patch bump):**
+1. Create PR with changes
+2. Title PR with `[PATCH]` prefix (or `fix:`)
+3. Merge PR → auto-bumps to next patch version (e.g., `0.97.0` → `0.97.1`)
+
+**For new upstream releases (major/minor bump):**
+1. Upstream monitoring creates an issue
+2. Create PR with `[MAJOR]` title and update VERSION file to `0.98.0`
+3. Merge PR → creates `v0.98.0` release
+
+**Skip release:**
+- Use `[SKIP]` prefix or `docs:`/`chore:` for non-release changes
 
 ## Supported Commands
 
