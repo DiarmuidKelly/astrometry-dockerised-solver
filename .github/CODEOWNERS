@@ -1,0 +1,13 @@
+# Code Owners for astrometry-dockerised-solver
+#
+# These owners will be requested for review when someone opens a pull request.
+# Only code owners can approve and merge PRs when "Require review from Code Owners" is enabled.
+#
+# More info: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owner for everything in the repo
+* @DiarmuidKelly
+
+# Specific file ownership
+/Dockerfile @DiarmuidKelly
+/.github/ @DiarmuidKelly

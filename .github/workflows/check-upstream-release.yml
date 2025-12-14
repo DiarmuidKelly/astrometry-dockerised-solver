@@ -1,0 +1,96 @@
+name: Check Upstream Releases
+
+on:
+  schedule:
+    # Run weekly on Mondays at 9am UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+jobs:
+  check-release:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check for new astrometry.net release
+        id: check
+        run: |
+          # Get latest release from upstream
+          LATEST_RELEASE=$(curl -s https://api.github.com/repos/dstndstn/astrometry.net/releases/latest | jq -r '.tag_name')
+          echo "Latest upstream release: $LATEST_RELEASE"
+          echo "latest_release=$LATEST_RELEASE" >> $GITHUB_OUTPUT
+
+          # Get our latest release/tag
+          OUR_LATEST=$(curl -s https://api.github.com/repos/${{ github.repository }}/releases/latest | jq -r '.tag_name')
+          if [ "$OUR_LATEST" == "null" ]; then
+            OUR_LATEST="v0.0.0"
+          fi
+          echo "Our latest release: $OUR_LATEST"
+          echo "our_latest=$OUR_LATEST" >> $GITHUB_OUTPUT
+
+          # Compare versions (strip 'v' prefix if present)
+          UPSTREAM_VER=${LATEST_RELEASE#v}
+          OUR_VER=${OUR_LATEST#v}
+
+          if [ "$UPSTREAM_VER" != "$OUR_VER" ]; then
+            echo "new_release=true" >> $GITHUB_OUTPUT
+            echo "New release detected: $UPSTREAM_VER (we have $OUR_VER)"
+          else
+            echo "new_release=false" >> $GITHUB_OUTPUT
+            echo "No new release (both at $OUR_VER)"
+          fi
+
+      - name: Check if issue already exists
+        if: steps.check.outputs.new_release == 'true'
+        id: issue_check
+        run: |
+          ISSUE_TITLE="New upstream release: ${{ steps.check.outputs.latest_release }}"
+          EXISTING_ISSUE=$(gh issue list --search "in:title $ISSUE_TITLE" --json number --jq '.[0].number')
+
+          if [ -n "$EXISTING_ISSUE" ]; then
+            echo "Issue already exists: #$EXISTING_ISSUE"
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "No existing issue found"
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create issue for new release
+        if: steps.check.outputs.new_release == 'true' && steps.issue_check.outputs.exists == 'false'
+        run: |
+          gh issue create \
+            --title "New upstream release: ${{ steps.check.outputs.latest_release }}" \
+            --label "upstream-release" \
+            --body "A new release of astrometry.net has been published!
+
+          **Upstream Release:** ${{ steps.check.outputs.latest_release }}
+          **Current Version:** ${{ steps.check.outputs.our_latest }}
+          **Upstream URL:** https://github.com/dstndstn/astrometry.net/releases/tag/${{ steps.check.outputs.latest_release }}
+
+          ## Action Required
+
+          To build this new version:
+
+          1. Review the upstream release notes
+          2. Test the build locally if needed:
+             \`\`\`bash
+             docker build --build-arg ASTROMETRY_VERSION=${{ steps.check.outputs.latest_release }} -t test-solver .
+             \`\`\`
+          3. Create a new release tag to trigger the build:
+             \`\`\`bash
+             git tag ${{ steps.check.outputs.latest_release }}
+             git push origin ${{ steps.check.outputs.latest_release }}
+             \`\`\`
+
+          Or trigger the build manually via [workflow_dispatch](https://github.com/${{ github.repository }}/actions/workflows/build-and-push.yml) with version \`${{ steps.check.outputs.latest_release }}\`.
+
+          This issue was automatically created by the upstream release checker."
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
