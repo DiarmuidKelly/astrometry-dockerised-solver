@@ -45,10 +45,9 @@ RUN apt -y update && apt install -y apt-utils && \
     python3-numpy \
     python3-scipy \
     python3-matplotlib \
+    python3-fitsio \
+    python3-astropy \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
-# Install Python dependencies
-RUN pip3 install --no-cache --break-system-packages fitsio astropy
 
 # Help astrometry.net find netpbm
 RUN ln -s /usr/include /usr/local/include/netpbm
@@ -63,16 +62,13 @@ ENV PYTHONPATH=/usr/local/lib/python
 RUN mkdir /src
 WORKDIR /src
 
-# Build flag - don't optimize for the build computer's CPU (better portability)
-ENV ARCH_FLAGS=-march=x86-64-v3
-
 # Clone and build specific version
 RUN git clone --depth 1 --branch ${ASTROMETRY_VERSION} https://github.com/dstndstn/astrometry.net.git astrometry || \
     git clone https://github.com/dstndstn/astrometry.net.git astrometry
 
 WORKDIR /src/astrometry
 
-# Build astrometry.net
+# Build astrometry.net (using GCC defaults for maximum portability)
 RUN make -j$(nproc) && \
     make py -j$(nproc) && \
     make extra -j$(nproc) && \
@@ -99,15 +95,13 @@ RUN apt -y update && \
     libjpeg-turbo8 \
     libpng16-16 \
     python3 \
-    python3-pip \
     python3-pil \
     python3-numpy \
     python3-scipy \
     python3-matplotlib \
+    python3-fitsio \
+    python3-astropy \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
-# Install Python runtime dependencies
-RUN pip3 install --no-cache --break-system-packages fitsio astropy
 
 # python = python3
 RUN ln -s /usr/bin/python3 /usr/bin/python
