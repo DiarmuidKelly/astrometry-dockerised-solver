@@ -82,6 +82,7 @@ jobs:
           context: .
           platforms: ${{ matrix.platform }}
           push: ${{ github.ref_type == 'tag' }}
+          load: ${{ github.ref_type != 'tag' }}
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:build-${{ github.run_id }}-${{ matrix.platform-tag }}
             ${{ vars.DOCKERHUB_IMAGE }}:build-${{ github.run_id }}-${{ matrix.platform-tag }}
@@ -92,7 +93,6 @@ jobs:
             ASTROMETRY_VERSION=${{ steps.version.outputs.ASTROMETRY_VERSION }}
           cache-from: type=gha,scope=${{ matrix.platform-tag }}
           cache-to: type=gha,mode=max,scope=${{ matrix.platform-tag }}
-          outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true
 
       - name: Export digest
         if: github.ref_type == 'tag'
