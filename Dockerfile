@@ -62,16 +62,13 @@ ENV PYTHONPATH=/usr/local/lib/python
 RUN mkdir /src
 WORKDIR /src
 
-# Build flag - don't optimize for the build computer's CPU (better portability)
-ENV ARCH_FLAGS=-march=x86-64-v3
-
 # Clone and build specific version
 RUN git clone --depth 1 --branch ${ASTROMETRY_VERSION} https://github.com/dstndstn/astrometry.net.git astrometry || \
     git clone https://github.com/dstndstn/astrometry.net.git astrometry
 
 WORKDIR /src/astrometry
 
-# Build astrometry.net
+# Build astrometry.net (using GCC defaults for maximum portability)
 RUN make -j$(nproc) && \
     make py -j$(nproc) && \
     make extra -j$(nproc) && \
