@@ -15,6 +15,7 @@ The `main` branch is protected with the following rules:
 ### Status Checks
 - **Require status checks to pass before merging**: Enabled
 - **Required status checks**:
+  - `Validate PR Title Format` - Validates PR title format for versioning
   - `Build and Push Docker Image` - Validates Dockerfile builds successfully
 
 ### Additional Restrictions
@@ -44,17 +45,30 @@ Squash or rebase merging creates a clean, linear git history.
 ### Conversation Resolution
 Ensures all review feedback is addressed before merging.
 
-## Release Process
+## Deploy Key Setup
 
-Since tags trigger Docker image builds:
+The auto-release workflow requires a deploy key with write access:
 
-1. Create PR with changes
-2. Get approval from code owner
-3. Merge to `main`
-4. Tag the commit: `git tag v0.XX && git push --tags`
-5. GitHub Actions builds and pushes to GHCR + DockerHub
+1. Generate an SSH key pair:
+   ```bash
+   ssh-keygen -t ed25519 -C "github-actions-deploy-key" -f deploy_key -N ""
+   ```
 
-**Note**: You can only push to `main` via PR. Tags must be created locally and pushed.
+2. Add the public key (`deploy_key.pub`) to:
+   **Settings** → **Deploy keys** → **Add deploy key**
+   - Title: `github-actions-deploy-key`
+   - Key: (paste contents of deploy_key.pub)
+   - ☑ Allow write access
+
+3. Add the private key (`deploy_key`) to:
+   **Settings** → **Secrets and variables** → **Actions** → **New repository secret**
+   - Name: `DEPLOY_KEY`
+   - Value: (paste contents of deploy_key)
+
+4. Delete the local key files:
+   ```bash
+   rm deploy_key deploy_key.pub
+   ```
 
 ## Setting Up Branch Protection
 
@@ -74,6 +88,7 @@ To configure these rules on GitHub:
 ☑ Require status checks to pass before merging
   ☑ Require branches to be up to date before merging
   Required status checks:
+    - Validate PR Title Format
     - Build and Push Docker Image
 
 ☑ Require conversation resolution before merging
@@ -90,13 +105,21 @@ To configure these rules on GitHub:
 ### PR Can't Be Merged
 
 **Issue**: "Required status checks have not been completed"
-- **Solution**: Wait for build to complete. If it fails, fix the Dockerfile and push.
+- **Solution**: Wait for all CI checks to complete. If they fail, fix the issues and push new commits.
 
 **Issue**: "Review required"
 - **Solution**: Request review from a code owner. See [CODEOWNERS](CODEOWNERS).
 
 **Issue**: "Conversation not resolved"
 - **Solution**: Resolve all comment threads before merging.
+
+### Auto-Release Not Working
+
+**Issue**: Release not created after PR merge
+- **Solution**: Check that PR title follows the correct format (see [CONTRIBUTING.md](../CONTRIBUTING.md))
+
+**Issue**: "Permission denied" during version bump commit
+- **Solution**: Verify DEPLOY_KEY secret is set correctly with write permissions
 
 ## References
 
