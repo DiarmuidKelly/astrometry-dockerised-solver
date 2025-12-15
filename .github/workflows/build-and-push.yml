@@ -86,6 +86,23 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.platform-tag }}
           cache-to: type=gha,mode=max,scope=${{ matrix.platform-tag }}
 
+      - name: Install skopeo
+        if: github.ref_type == 'tag'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y skopeo
+
+      - name: Copy digest to DockerHub
+        if: github.ref_type == 'tag'
+        run: |
+          DIGEST="${{ steps.build.outputs.digest }}"
+          echo "Copying digest ${DIGEST} from GHCR to DockerHub"
+          skopeo copy \
+            --src-creds=${{ github.actor }}:${{ secrets.GITHUB_TOKEN }} \
+            --dest-creds=${{ secrets.DOCKERHUB_USERNAME }}:${{ secrets.DOCKERHUB_TOKEN }} \
+            docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${DIGEST} \
+            docker://${{ vars.DOCKERHUB_IMAGE }}@${DIGEST}
+
       - name: Export digest
         if: github.ref_type == 'tag'
         run: |
@@ -135,28 +152,51 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Extract metadata (tags, labels)
-        id: meta
+      - name: Extract metadata for GHCR
+        id: meta-ghcr
         uses: docker/metadata-action@v5
         with:
-          images: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-            ${{ vars.DOCKERHUB_IMAGE }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=ref,event=pr
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=raw,value=latest,enable={{is_default_branch}}
 
-      - name: Create manifest list and push
+      - name: Extract metadata for DockerHub
+        id: meta-dockerhub
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ vars.DOCKERHUB_IMAGE }}
+          tags: |
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Create GHCR manifest list and push
         working-directory: /tmp/digests
         run: |
           docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
             $(printf '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@sha256:%s ' *)
+        env:
+          DOCKER_METADATA_OUTPUT_JSON: ${{ steps.meta-ghcr.outputs.json }}
 
-      - name: Inspect image
+      - name: Create DockerHub manifest list and push
+        working-directory: /tmp/digests
         run: |
-          docker buildx imagetools inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
+          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf '${{ vars.DOCKERHUB_IMAGE }}@sha256:%s ' *)
+        env:
+          DOCKER_METADATA_OUTPUT_JSON: ${{ steps.meta-dockerhub.outputs.json }}
+
+      - name: Inspect GHCR image
+        run: |
+          docker buildx imagetools inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta-ghcr.outputs.version }}
+
+      - name: Inspect DockerHub image
+        run: |
+          docker buildx imagetools inspect ${{ vars.DOCKERHUB_IMAGE }}:${{ steps.meta-dockerhub.outputs.version }}
 
       - name: Checkout repository for README
         uses: actions/checkout@v4
