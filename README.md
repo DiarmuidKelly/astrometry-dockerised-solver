@@ -10,6 +10,8 @@ A minimal, maintained Docker image for the [Astrometry.net](https://github.com/d
 
 **Available on:** [Docker Hub](https://hub.docker.com/r/diarmuidk/astrometry-dockerised-solver) • [GitHub Container Registry](https://github.com/DiarmuidKelly/astrometry-dockerised-solver/pkgs/container/astrometry-dockerised-solver)
 
+**Source Code:** [GitHub Repository](https://github.com/DiarmuidKelly/astrometry-dockerised-solver)
+
 Built specifically for use with [astrometry-go-client](https://github.com/DiarmuidKelly/astrometry-go-client).
 
 ## Features
