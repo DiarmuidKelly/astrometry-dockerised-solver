@@ -8,6 +8,8 @@
 
 A minimal, maintained Docker image for the [Astrometry.net](https://github.com/dstndstn/astrometry.net) plate solver - solver binaries only, no web app.
 
+**Available on:** [Docker Hub](https://hub.docker.com/r/diarmuidk/astrometry-dockerised-solver) • [GitHub Container Registry](https://github.com/DiarmuidKelly/astrometry-dockerised-solver/pkgs/container/astrometry-dockerised-solver)
+
 Built specifically for use with [astrometry-go-client](https://github.com/DiarmuidKelly/astrometry-go-client).
 
 ## Features
@@ -21,25 +23,47 @@ Built specifically for use with [astrometry-go-client](https://github.com/Diarmu
 ## Quick Start
 
 ```bash
-# Pull from GitHub Container Registry (GHCR)
-docker pull ghcr.io/diarmuidkelly/astrometry-dockerised-solver:latest
-
-# Or pull from DockerHub
+# Pull from DockerHub
 docker pull diarmuidk/astrometry-dockerised-solver:latest
 
 # Show help
-docker run --rm ghcr.io/diarmuidkelly/astrometry-dockerised-solver:latest solve-field --help
+docker run --rm diarmuidk/astrometry-dockerised-solver:latest solve-field --help
 
 # Check version
-docker run --rm ghcr.io/diarmuidkelly/astrometry-dockerised-solver:latest solve-field --version
+docker run --rm diarmuidk/astrometry-dockerised-solver:latest solve-field --version
 
 # Solve an image (mount your index files and image directory)
 docker run --rm \
   -v /path/to/index/files:/usr/local/astrometry/data:ro \
   -v /path/to/images:/data \
-  ghcr.io/diarmuidkelly/astrometry-dockerised-solver:latest \
+  diarmuidk/astrometry-dockerised-solver:latest \
   solve-field /data/your-image.fits
 ```
+
+## Available Commands
+
+All astrometry.net solver binaries are included. Simply replace `solve-field` with any command:
+
+```bash
+# Main plate solving command
+docker run --rm diarmuidk/astrometry-dockerised-solver:latest solve-field --help
+
+# Other available commands:
+docker run --rm diarmuidk/astrometry-dockerised-solver:latest image2xy --help
+docker run --rm diarmuidk/astrometry-dockerised-solver:latest fit-wcs --help
+docker run --rm diarmuidk/astrometry-dockerised-solver:latest wcs-xy2rd --help
+docker run --rm diarmuidk/astrometry-dockerised-solver:latest wcs-rd2xy --help
+```
+
+**Available binaries:**
+
+- `solve-field` - main plate solving command
+- `image2xy` - extract sources from images
+- `fit-wcs` - fit WCS to xy lists
+- `wcs-xy2rd`, `wcs-rd2xy` - coordinate conversions
+- And more...
+
+For detailed usage and command documentation, see the [upstream Astrometry.net solving documentation](https://github.com/dstndstn/astrometry.net/tree/main/doc#solving).
 
 ## Usage with astrometry-go-client
 
@@ -49,7 +73,7 @@ This image is designed to work seamlessly with the [astrometry-go-client](https:
 // Use the containerized solver instead of the web API
 client := astrometry.NewClient(astrometry.Config{
     SolverType: astrometry.LocalDocker,
-    DockerImage: "ghcr.io/diarmuidkelly/astrometry-dockerised-solver:latest",
+    DockerImage: "diarmuidk/astrometry-dockerised-solver:latest",
     IndexPath: "/path/to/index/files",
 })
 ```
@@ -58,7 +82,7 @@ client := astrometry.NewClient(astrometry.Config{
 
 The image includes one sample index file (`index-4119.fits`) covering ~20-30° field widths.
 
-For complete coverage, download additional index files:
+For complete coverage, download additional index files ([available here at astrometry.net](http://data.astrometry.net/)):
 
 ```bash
 # Download to a local directory
@@ -76,7 +100,7 @@ Then mount this directory when running:
 docker run --rm \
   -v $(pwd)/index-files:/usr/local/astrometry/data:ro \
   -v $(pwd):/data \
-  ghcr.io/diarmuidkelly/astrometry-dockerised-solver:latest \
+  diarmuidk/astrometry-dockerised-solver:latest \
   solve-field /data/image.fits
 ```
 
@@ -88,7 +112,44 @@ Available on both [DockerHub](https://hub.docker.com/r/diarmuidk/astrometry-dock
 - `0.97`, `0.96`, etc. - specific astrometry.net versions
 - `main` - development builds
 
-## Building Locally
+## Versioning
+
+This project follows a **semantic versioning scheme aligned with upstream**:
+
+**Format:** `MAJOR.MINOR.PATCH`
+
+- `MAJOR.MINOR` - Matches upstream astrometry.net version (e.g., `0.97`)
+- `PATCH` - Increments for Dockerfile fixes/improvements
+
+**Examples:**
+
+- `0.97.0` - Initial build of astrometry.net 0.97
+- `0.97.1` - Dockerfile optimization for 0.97
+- `0.98.0` - New upstream astrometry.net 0.98 release
+
+### Release Process
+
+**For Dockerfile changes (patch bump):**
+
+1. Create PR with changes
+2. Title PR with `[PATCH]` prefix (or `fix:`)
+3. Merge PR → auto-bumps to next patch version (e.g., `0.97.0` → `0.97.1`)
+
+**For new upstream releases (major/minor bump):**
+
+1. Upstream monitoring creates an issue
+2. Create PR with `[MAJOR]` title and update VERSION file to `0.98.0`
+3. Merge PR → creates `v0.98.0` release
+
+**Skip release:**
+
+- Use `[SKIP]` prefix or `docs:`/`chore:` for non-release changes
+
+## Contributing
+
+Issues and PRs welcome! This repo is intentionally minimal - for solver functionality, contribute upstream to [dstndstn/astrometry.net](https://github.com/dstndstn/astrometry.net).
+
+### Building Locally
 
 ```bash
 # Build default version (0.97)
@@ -101,62 +162,14 @@ docker build --build-arg ASTROMETRY_VERSION=0.97 -t astrometry-solver:0.97 .
 docker buildx build --platform linux/amd64,linux/arm64 -t astrometry-solver .
 ```
 
-## Automated Builds
+### Automated Builds
 
-This repo uses GitHub Actions to:
+This repo uses GitHub Actions for automated builds and upstream monitoring:
 
-1. **Build on push/tag** - `.github/workflows/build-and-push.yml`
+- **Build pipeline** (`.github/workflows/build-and-push.yml`) - Builds multi-arch images and pushes to both GHCR and DockerHub on version tags
+- **Upstream monitoring** (`.github/workflows/check-upstream-release.yml`) - Runs daily to check for new astrometry.net releases and creates issues
 
-   - Builds multi-arch images
-   - Pushes to GHCR with appropriate tags
-   - Triggered by pushes to `main` or new version tags
-
-2. **Monitor upstream** - `.github/workflows/check-upstream-release.yml`
-   - Runs daily to check for new astrometry.net releases
-   - Creates GitHub issues when new versions are available
-   - Provides instructions for building the new version
-
-## Versioning
-
-This project follows a **semantic versioning scheme aligned with upstream**:
-
-**Format:** `MAJOR.MINOR.PATCH`
-- `MAJOR.MINOR` - Matches upstream astrometry.net version (e.g., `0.97`)
-- `PATCH` - Increments for Dockerfile fixes/improvements
-
-**Examples:**
-- `0.97.0` - Initial build of astrometry.net 0.97
-- `0.97.1` - Dockerfile optimization for 0.97
-- `0.98.0` - New upstream astrometry.net 0.98 release
-
-### Release Process
-
-**For Dockerfile changes (patch bump):**
-1. Create PR with changes
-2. Title PR with `[PATCH]` prefix (or `fix:`)
-3. Merge PR → auto-bumps to next patch version (e.g., `0.97.0` → `0.97.1`)
-
-**For new upstream releases (major/minor bump):**
-1. Upstream monitoring creates an issue
-2. Create PR with `[MAJOR]` title and update VERSION file to `0.98.0`
-3. Merge PR → creates `v0.98.0` release
-
-**Skip release:**
-- Use `[SKIP]` prefix or `docs:`/`chore:` for non-release changes
-
-## Supported Commands
-
-All astrometry.net solver binaries are available:
-
-- `solve-field` - main plate solving command
-- `image2xy` - extract sources from images
-- `fit-wcs` - fit WCS to xy lists
-- `wcs-xy2rd`, `wcs-rd2xy` - coordinate conversions
-- And more (see `/usr/local/bin/`)
-
-## Contributing
-
-Issues and PRs welcome! This repo is intentionally minimal - for solver functionality, contribute upstream to [dstndstn/astrometry.net](https://github.com/dstndstn/astrometry.net).
+See the [Versioning](#versioning) section for the release process.
 
 ## License
 
@@ -169,5 +182,4 @@ This repo carries the same license as the upstream - kept up to date 14.12.2025.
 
 ## Acknowledgments
 
-- [Astrometry.net](https://github.com/dstndstn/astrometry.net) - The plate-solving engine
 - [dam90/astrometry](https://github.com/dam90/astrometry) - Inspiration for the containerized approach

@@ -71,17 +71,13 @@ jobs:
             echo "ASTROMETRY_VERSION=0.97" >> $GITHUB_OUTPUT
           fi
 
-      - name: Build and push platform image
+      - name: Build and export platform image
         id: build
         uses: docker/build-push-action@v5
         with:
           context: .
           platforms: ${{ matrix.platform }}
-          push: ${{ github.ref_type == 'tag' }}
-          load: ${{ github.ref_type != 'tag' }}
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:build-${{ github.run_id }}-${{ matrix.platform-tag }}
-            ${{ vars.DOCKERHUB_IMAGE }}:build-${{ github.run_id }}-${{ matrix.platform-tag }}
+          outputs: ${{ github.ref_type == 'tag' && 'type=image,push-by-digest=true,name-canonical=true,push=true' || 'type=docker' }}
           labels: |
             org.opencontainers.image.source=${{ github.repositoryUrl }}
             org.opencontainers.image.revision=${{ github.sha }}
@@ -161,3 +157,14 @@ jobs:
       - name: Inspect image
         run: |
           docker buildx imagetools inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
+
+      - name: Checkout repository for README
+        uses: actions/checkout@v4
+
+      - name: Update Docker Hub description
+        uses: peter-evans/dockerhub-description@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          repository: ${{ vars.DOCKERHUB_IMAGE }}
+          readme-filepath: ./README.md
