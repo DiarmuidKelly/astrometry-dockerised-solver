@@ -87,6 +87,7 @@ RUN apt -y update && \
     wget \
     curl \
     ca-certificates \
+    file \
     netpbm \
     wcslib-tools \
     libcairo2 \
@@ -114,6 +115,9 @@ COPY --from=builder /usr/local /usr/local
 
 # Create data directory for index files (compatible with dm90/astrometry path)
 RUN mkdir -p /usr/local/astrometry/data
+
+# Update config to use /usr/local/astrometry/data instead of /usr/local/data
+RUN sed -i 's|add_path /usr/local/data|add_path /usr/local/astrometry/data|g' /usr/local/etc/astrometry.cfg
 
 # Download one sample index file (covers ~20-30 degree field width)
 # Users can mount more index files as needed
