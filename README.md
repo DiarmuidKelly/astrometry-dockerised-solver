@@ -185,3 +185,4 @@ This repo carries the same license as the upstream - kept up to date 14.12.2025.
 ## Acknowledgments
 
 - [dam90/astrometry](https://github.com/dam90/astrometry) - Inspiration for the containerized approach
+- Reference original DockerFile [dstndstn/astrometry.net](https://github.com/dstndstn/astrometry.net/tree/main/docker)

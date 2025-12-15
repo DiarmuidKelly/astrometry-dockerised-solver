@@ -1,3 +1,4 @@
+# Reference original https://github.com/dstndstn/astrometry.net/tree/main/docker
 # Multi-stage build for Astrometry.net solver (no web app)
 # Build args for version pinning
 ARG ASTROMETRY_VERSION=0.97
